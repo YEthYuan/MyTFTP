@@ -73,7 +73,7 @@ int main()
 		exit(1);
 	}
 	if (wsaData.wVersion != 0x0101) {
-		printf("Winsocket版本支持错误！\n");
+		printf("Winsocket版本支持错误！本代码仅支持版本0x0101! \n");
 		WSACleanup();
 		exit(2);
 	}
