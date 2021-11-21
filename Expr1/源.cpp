@@ -25,12 +25,86 @@ SOCKET sServSock;
 sockaddr_in addr;
 int addrLen = sizeof(addr);
 
-void printTime() {
+/*   ÉùÃ÷º¯Êý   */
+void printTime();
+void sendACK(int blocknum);
+int recvfrom_time(SOCKET fd, char recvbuf[], size_t buf_n, sockaddr* addr, int* len, const char sendbuf[], int sendbufsize, int blocknum);
+int recvfrom_time(SOCKET fd, char recvbuf[], size_t buf_n, sockaddr* addr, int* len, int ACKnum);
+int sendRequest(int op, const char filename[], int type);
+void dealError(const char buf[]);
+bool getFile(const char filename[], int type);
+bool pushFile(const char filename[], int type);
+
+
+int main() 
+{
+	WSADATA wsaData;
+	int nRc = WSAStartup(0x0101, &wsaData);
+	if (nRc) {
+		exit(1);
+	}
+	if (wsaData.wVersion != 0x0101) {
+		printf("Winsocket°æ±¾Ö§³Ö´íÎó£¡\n");
+		WSACleanup();
+		exit(2);
+	}
+	cout << "ÇëÊäÈë·þÎñÆ÷IP£º";
+	char ip[20] = "10.201.179.86";
+	cin >> ip;
+	cout << "ÇëÊäÈë·þÎñÆ÷¶Ë¿ÚºÅ£º";
+	int port = 69;
+	cin >> port;
+	addr.sin_family = AF_INET;
+	addr.sin_addr.S_un.S_addr = inet_addr(ip);
+	addr.sin_port = htons(port);
+	sServSock = socket(AF_INET, SOCK_DGRAM, 0);
+	cout << "ÏÂÔØÎÄ¼þÇëÊäÈë1£¬ÉÏ´«ÎÄ¼þÇëÊäÈë2£º";
+	int op = 1;
+	cin >> op;
+	if (op != RRQ && op != WRQ) {
+		cout << "ÊäÈë´íÎó\n";
+		exit(3);
+	}
+	cout << "ÇëÊäÈëÏëÒª´«ÊäµÄÎÄ¼þÀàÐÍ(ÎÄ±¾ÎÄ¼þ-1£¬¶þ½øÖÆÎÄ¼þ-2)£º";
+	int type = 1;
+	cin >> type;
+	if (type != 1 && type != 2) {
+		cout << "ÊäÈë´íÎó\n";
+		exit(3);
+	}
+	cout << "ÇëÊäÈëÎÄ¼þÃû(º¬ºó×º)£º";
+	char filename[20] = "1.txt";
+	cin >> filename;
+	DWORD start, end;
+	start = timeGetTime();
+	if (op == RRQ) {
+		getFile(filename, type);
+	}
+	else {
+		pushFile(filename, type);
+	}
+	end = timeGetTime();
+	double time = (end - start) * 1.0 / 1000;
+	FILE* file = fopen(filename, "r+");
+	fseek(file, 0, SEEK_END);
+	long size = ftell(file);
+	fclose(file);
+	double speed = size == 0 ? 0 : 8 * size / time / 1000;
+	cout << "Æ½¾ù´«ÊäËÙÂÊ£º" << speed << "Kbps\n";
+	closesocket(sServSock);
+	fclose(fp);
+	return 0;
+}
+
+void printTime() 
+{
 	SYSTEMTIME sys;
 	GetLocalTime(&sys);
 	fprintf(fp, "[%4d/%02d/%02d %02d:%02d:%02d]", sys.wYear, sys.wMonth, sys.wDay, sys.wHour, sys.wMinute, sys.wSecond);
 }
-void sendACK(int blocknum) {
+
+void sendACK(int blocknum) 
+{
 	char buf[4];
 	memset(buf, 0, 4);
 	buf[1] = ACK;
@@ -40,7 +114,9 @@ void sendACK(int blocknum) {
 	sendto(sServSock, buf, 4, 0, (LPSOCKADDR)&addr, addrLen);
 	printf("sendACK=%d\n", blocknum);
 }
-int recvfrom_time(SOCKET fd, char recvbuf[], size_t buf_n, sockaddr* addr, int* len, const char sendbuf[], int sendbufsize, int blocknum) {
+
+int recvfrom_time(SOCKET fd, char recvbuf[], size_t buf_n, sockaddr* addr, int* len, const char sendbuf[], int sendbufsize, int blocknum) 
+{
 	struct timeval tv;
 	fd_set readfds;
 	int n = 0;
@@ -63,7 +139,9 @@ int recvfrom_time(SOCKET fd, char recvbuf[], size_t buf_n, sockaddr* addr, int* 
 	}
 	return -1;
 }
-int recvfrom_time(SOCKET fd, char recvbuf[], size_t buf_n, sockaddr* addr, int* len, int ACKnum) {
+
+int recvfrom_time(SOCKET fd, char recvbuf[], size_t buf_n, sockaddr* addr, int* len, int ACKnum) 
+{
 	struct timeval tv;
 	fd_set readfds;
 	int n = 0;
@@ -86,7 +164,9 @@ int recvfrom_time(SOCKET fd, char recvbuf[], size_t buf_n, sockaddr* addr, int* 
 	}
 	return -1;
 }
-int sendRequest(int op, const char filename[], int type) {//type=1ÎªÎÄ±¾¸ñÊ½(txt)£¬2Îª¶þ½øÖÆÎÄ¼þ
+
+int sendRequest(int op, const char filename[], int type) //type=1ÎªÎÄ±¾¸ñÊ½(txt)£¬2Îª¶þ½øÖÆÎÄ¼þ
+{
 	char buf[516];
 	if (op != RRQ && op != WRQ) {
 		cout << "makeRequest Error!\n";
@@ -111,7 +191,9 @@ int sendRequest(int op, const char filename[], int type) {//type=1ÎªÎÄ±¾¸ñÊ½(txt
 		return sendto(sServSock, buf, len + 9, 0, (LPSOCKADDR)&addr, addrLen);
 	}
 }
-void dealError(const char buf[]) {
+
+void dealError(const char buf[]) 
+{
 	if (buf[1] != ERROR) return;
 	cout << "´«ÊäÊ§°Ü£º"; printTime(); fprintf(fp, "´«ÊäÊ§°Ü£º");
 	switch (buf[3]) {
@@ -127,7 +209,9 @@ void dealError(const char buf[]) {
 	}
 	cout << buf + 4 << '\n'; fprintf(fp, "%s\n", buf + 4);
 }
-bool getFile(const char filename[], int type) {//type=1ÎªÎÄ±¾¸ñÊ½(txt)£¬2Îª¶þ½øÖÆÎÄ¼þ
+
+bool getFile(const char filename[], int type) //type=1ÎªÎÄ±¾¸ñÊ½(txt)£¬2Îª¶þ½øÖÆÎÄ¼þ
+{
 	char recvbuf[BUFFER_SIZE];
 	if (type == 2) {
 		FILE* writefp = fopen(filename, "wb+");
@@ -237,7 +321,9 @@ bool getFile(const char filename[], int type) {//type=1ÎªÎÄ±¾¸ñÊ½(txt)£¬2Îª¶þ½øÖ
 	printTime(); fprintf(fp, "ÎÄ¼þ´«Êä³É¹¦£¡\n");
 	return true;
 }
-bool pushFile(const char filename[], int type) {//type=1ÎªÎÄ±¾¸ñÊ½(txt)£¬2Îª¶þ½øÖÆÎÄ¼þ
+
+bool pushFile(const char filename[], int type) //type=1ÎªÎÄ±¾¸ñÊ½(txt)£¬2Îª¶þ½øÖÆÎÄ¼þ
+{
 	char recvbuf[BUFFER_SIZE], sendbuf[BUFFER_SIZE];
 	memset(sendbuf, 0, sizeof(sendbuf));
 	sendbuf[1] = DATA;
@@ -343,62 +429,4 @@ bool pushFile(const char filename[], int type) {//type=1ÎªÎÄ±¾¸ñÊ½(txt)£¬2Îª¶þ½ø
 	printf("ÎÄ¼þ´«Êä³É¹¦£¡\n");
 	printTime(); fprintf(fp, "ÎÄ¼þ´«Êä³É¹¦£¡\n");
 	return true;
-}
-int main() {
-	WSADATA wsaData;
-	int nRc = WSAStartup(0x0101, &wsaData);
-	if (nRc) {
-		exit(1);
-	}
-	if (wsaData.wVersion != 0x0101) {
-		printf("Winsocket°æ±¾Ö§³Ö´íÎó£¡\n");
-		WSACleanup();
-		exit(2);
-	}
-	cout << "ÇëÊäÈë·þÎñÆ÷IP£º";
-	char ip[20] = "10.201.179.86";
-	cin >> ip;
-	cout << "ÇëÊäÈë·þÎñÆ÷¶Ë¿ÚºÅ£º";
-	int port = 69;
-	cin >> port;
-	addr.sin_family = AF_INET;
-	addr.sin_addr.S_un.S_addr = inet_addr(ip);
-	addr.sin_port = htons(port);
-	sServSock = socket(AF_INET, SOCK_DGRAM, 0);
-	cout << "ÏÂÔØÎÄ¼þÇëÊäÈë1£¬ÉÏ´«ÎÄ¼þÇëÊäÈë2£º";
-	int op = 1;
-	cin >> op;
-	if (op != RRQ && op != WRQ) {
-		cout << "ÊäÈë´íÎó\n";
-		exit(3);
-	}
-	cout << "ÇëÊäÈëÏëÒª´«ÊäµÄÎÄ¼þÀàÐÍ(ÎÄ±¾ÎÄ¼þ-1£¬¶þ½øÖÆÎÄ¼þ-2)£º";
-	int type = 1;
-	cin >> type;
-	if (type != 1 && type != 2) {
-		cout << "ÊäÈë´íÎó\n";
-		exit(3);
-	}
-	cout << "ÇëÊäÈëÎÄ¼þÃû(º¬ºó×º)£º";
-	char filename[20] = "1.txt";
-	cin >> filename;
-	DWORD start, end;
-	start = timeGetTime();
-	if (op == RRQ) {
-		getFile(filename, type);
-	}
-	else {
-		pushFile(filename, type);
-	}
-	end = timeGetTime();
-	double time = (end - start) * 1.0 / 1000;
-	FILE* file = fopen(filename, "r+");
-	fseek(file, 0, SEEK_END);
-	long size = ftell(file);
-	fclose(file);
-	double speed = size == 0 ? 0 : 8 * size / time / 1000;
-	cout << "Æ½¾ù´«ÊäËÙÂÊ£º" << speed << "Kbps\n";
-	closesocket(sServSock);
-	fclose(fp);
-	return 0;
 }
