@@ -1,8 +1,29 @@
+//
+//		计算机网络实验：第一部分-TFTP协议的实现
+//		网安1902班 袁也 U201911808
+//		日期：2021/11/20
+// 
+//		网络连接信息：
+//		Server IP: 
+//		Server Port:
+//
+
+//		这里为了防止windows.h与socket库的递归重入
+#ifndef _WINSOCK2API_
+#ifdef _WINSOCKAPI_
+#error Header winsock.h is included unexpectedly.
+#endif
+#if !defined(WIN32_LEAN_AND_MEAN) && (_WIN32_WINNT >= 0x0400) && !defined(USING_WIN_PSDK)
+#include <windows.h>
+#else
+#include <winsock2.h>
+#endif
+#endif
 #include <cstdio>
 #include <iostream>
-#include <winsock2.h>
-#include <windows.h>
 #include <cstring>
+#include <ctime>
+#include <list>
 #include <algorithm>
 
 /*   定义包类型   */
@@ -11,6 +32,12 @@
 #define DATA 3					//文件数据包：Data
 #define ACK 4					//回应包：Acknowledgement
 #define ERROR 5					//错误信息包：Error
+
+/*   定义错误类型   */
+#define _CRT_SECURE_NO_WARNINGS
+#define START_UP_ERROR 1
+#define VERSION_NOT_SUPPORT 2
+#define INPUT_WRONG_COMMAND 3
 
 /*   定义常规变量   */
 #define BUFFER_SIZE 1024		//缓冲区大小
@@ -24,6 +51,8 @@ FILE* fp = fopen("log.txt", "a+");
 SOCKET sServSock;
 sockaddr_in addr;
 int addrLen = sizeof(addr);
+char ip[20] = "10.201.179.86";	//服务器IP
+int port = 69;					//服务器端口号
 
 /*   声明函数   */
 void printTime();
@@ -49,10 +78,8 @@ int main()
 		exit(2);
 	}
 	cout << "请输入服务器IP：";
-	char ip[20] = "10.201.179.86";
 	cin >> ip;
 	cout << "请输入服务器端口号：";
-	int port = 69;
 	cin >> port;
 	addr.sin_family = AF_INET;
 	addr.sin_addr.S_un.S_addr = inet_addr(ip);
