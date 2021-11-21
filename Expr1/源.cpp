@@ -1,29 +1,30 @@
-// g++ tftp.cpp -o tftp -lws2_32 -lwinmm
-// ./tftp
-/*
-192.168.1.101
-69
-1
-2
-h.exe
-*/
+#include <cstdio>
 #include <iostream>
 #include <winsock2.h>
 #include <windows.h>
 #include <cstring>
-#define BUFFER_SIZE 1024
-#define READ_REQUEST 1
-#define WRITE_REQUEST 2
-#define DATA 3
-#define ACKNOWLEDGEMENT 4
-#define WRONG_RECV 5
+#include <algorithm>
+
+/*   ¶¨Òå°üÀàÐÍ   */
+#define RRQ 1					//¶ÁÎÄ¼þÇëÇó°ü£ºRead request
+#define WRQ 2					//Ð´ÎÄ¼þÇëÇó°ü£ºWrite requst
+#define DATA 3					//ÎÄ¼þÊý¾Ý°ü£ºData
+#define ACK 4					//»ØÓ¦°ü£ºAcknowledgement
+#define ERROR 5					//´íÎóÐÅÏ¢°ü£ºError
+
+/*   ¶¨Òå³£¹æ±äÁ¿   */
+#define BUFFER_SIZE 1024		//»º³åÇø´óÐ¡
+#define RECV_LOOP_COUNT 6		//³¬Ê±×î´óÖØ·¢´ÎÊý
+#define TIME_OUT_SEC 5			//³¬Ê±Ê±¼ä
+
 using namespace std;
+
+/*   ³õÊ¼»¯Ò»Ð©±äÁ¿   */
 FILE* fp = fopen("log.txt", "a+");
 SOCKET sServSock;
 sockaddr_in addr;
 int addrLen = sizeof(addr);
-#define RECV_LOOP_COUNT 6	//³¬Ê±×î´óÖØ·¢´ÎÊý
-#define TIME_OUT_SEC 5	//³¬Ê±Ê±¼ä
+
 void printTime() {
 	SYSTEMTIME sys;
 	GetLocalTime(&sys);
@@ -32,7 +33,7 @@ void printTime() {
 void sendACK(int blocknum) {
 	char buf[4];
 	memset(buf, 0, 4);
-	buf[1] = ACKNOWLEDGEMENT;
+	buf[1] = ACK;
 	memcpy(&buf[3], &blocknum, 1);
 	int t = blocknum >> 8;
 	memcpy(&buf[2], &t, 1);
@@ -87,13 +88,13 @@ int recvfrom_time(SOCKET fd, char recvbuf[], size_t buf_n, sockaddr* addr, int* 
 }
 int sendRequest(int op, const char filename[], int type) {//type=1ÎªÎÄ±¾¸ñÊ½(txt)£¬2Îª¶þ½øÖÆÎÄ¼þ
 	char buf[516];
-	if (op != READ_REQUEST && op != WRITE_REQUEST) {
+	if (op != RRQ && op != WRQ) {
 		cout << "makeRequest Error!\n";
 		printTime(); fprintf(fp, "makeRequest Error!\n");
 		return false;
 	}
 	printTime();
-	if (op == READ_REQUEST)
+	if (op == RRQ)
 		fprintf(fp, "ÇëÇóÏÂÔØÊý¾Ý:%s\n", filename);
 	else
 		fprintf(fp, "ÇëÇóÉÏ´«Êý¾Ý:%s\n", filename);
@@ -111,7 +112,7 @@ int sendRequest(int op, const char filename[], int type) {//type=1ÎªÎÄ±¾¸ñÊ½(txt
 	}
 }
 void dealError(const char buf[]) {
-	if (buf[1] != WRONG_RECV) return;
+	if (buf[1] != ERROR) return;
 	cout << "´«ÊäÊ§°Ü£º"; printTime(); fprintf(fp, "´«ÊäÊ§°Ü£º");
 	switch (buf[3]) {
 	case 0:cout << "Î´¶¨Òå£º"; fprintf(fp, "Î´¶¨Òå£º"); break;
@@ -130,7 +131,7 @@ bool getFile(const char filename[], int type) {//type=1ÎªÎÄ±¾¸ñÊ½(txt)£¬2Îª¶þ½øÖ
 	char recvbuf[BUFFER_SIZE];
 	if (type == 2) {
 		FILE* writefp = fopen(filename, "wb+");
-		int len = sendRequest(READ_REQUEST, filename, type);
+		int len = sendRequest(RRQ, filename, type);
 		int blockNum = 0, errortimes = 0, senderror = 0;
 		while (true) {
 			len = recvfrom_time(sServSock, recvbuf, BUFFER_SIZE, (LPSOCKADDR)&addr, &addrLen, blockNum);
@@ -142,14 +143,14 @@ bool getFile(const char filename[], int type) {//type=1ÎªÎÄ±¾¸ñÊ½(txt)£¬2Îª¶þ½øÖ
 					return false;
 				}
 				printf("Ó¦´ð³¬Ê±£¬ÖØ´«Request!\n");
-				len = sendRequest(READ_REQUEST, filename, type);
+				len = sendRequest(RRQ, filename, type);
 			}
 			else if (len == -1) {
 				printf("´«ÊäÊ§°Ü£ºerrno=%d\n", WSAGetLastError());
 				printTime(); fprintf(fp, "´«ÊäÊ§°Ü£ºerrno=%d\n", WSAGetLastError());
 				return false;
 			}
-			else if (recvbuf[1] == WRONG_RECV) {
+			else if (recvbuf[1] == ERROR) {
 				dealError(recvbuf);
 				return false;
 			}
@@ -182,7 +183,7 @@ bool getFile(const char filename[], int type) {//type=1ÎªÎÄ±¾¸ñÊ½(txt)£¬2Îª¶þ½øÖ
 	}
 	else {
 		FILE* writefp = fopen(filename, "w+");
-		int len = sendRequest(READ_REQUEST, filename, type);
+		int len = sendRequest(RRQ, filename, type);
 		int blockNum = 0, errortimes = 0, senderror = 0;
 		while (true) {
 			len = recvfrom_time(sServSock, recvbuf, BUFFER_SIZE, (LPSOCKADDR)&addr, &addrLen, blockNum);
@@ -194,14 +195,14 @@ bool getFile(const char filename[], int type) {//type=1ÎªÎÄ±¾¸ñÊ½(txt)£¬2Îª¶þ½øÖ
 					return false;
 				}
 				printf("Ó¦´ð³¬Ê±£¬ÖØ´«Request!\n");
-				len = sendRequest(READ_REQUEST, filename, type);
+				len = sendRequest(RRQ, filename, type);
 			}
 			else if (len == -1) {
 				printf("´«ÊäÊ§°Üerrno=%d\n", WSAGetLastError());
 				printTime(); fprintf(fp, "´«ÊäÊ§°Üerrno=%d\n", WSAGetLastError());
 				return false;
 			}
-			else if (recvbuf[1] == WRONG_RECV) {
+			else if (recvbuf[1] == ERROR) {
 				dealError(recvbuf);
 				return false;
 			}
@@ -248,7 +249,7 @@ bool pushFile(const char filename[], int type) {//type=1ÎªÎÄ±¾¸ñÊ½(txt)£¬2Îª¶þ½ø
 			printTime(); fprintf(fp, "´«ÊäÊ§°Ü£ºÎ´ÄÜ´ò¿ª´ËÎÄ¼þ\n");
 			exit(4);
 		}
-		int len = sendRequest(WRITE_REQUEST, filename, type);
+		int len = sendRequest(WRQ, filename, type);
 		int blocknum = 0;
 		while (true) {
 			len = recvfrom_time(sServSock, recvbuf, BUFFER_SIZE, (LPSOCKADDR)&addr, &addrLen, sendbuf, len + 4, blocknum);
@@ -260,18 +261,18 @@ bool pushFile(const char filename[], int type) {//type=1ÎªÎÄ±¾¸ñÊ½(txt)£¬2Îª¶þ½ø
 					return false;
 				}
 				printf("Ó¦´ð³¬Ê±£¬ÖØ´«Request!\n");
-				len = sendRequest(WRITE_REQUEST, filename, type);
+				len = sendRequest(WRQ, filename, type);
 			}
 			else if (len == -1) {
 				printf("´«ÊäÊ§°Ü£ºerrno=%d\n", WSAGetLastError());
 				printTime(); fprintf(fp, "´«ÊäÊ§°Ü£ºerrno=%d\n", WSAGetLastError());
 				return false;
 			}
-			else if (recvbuf[1] == WRONG_RECV) {
+			else if (recvbuf[1] == ERROR) {
 				dealError(recvbuf);
 				return false;
 			}
-			else if (recvbuf[1] == ACKNOWLEDGEMENT) {
+			else if (recvbuf[1] == ACK) {
 				int recvnum = 0, t = 0;
 				memcpy(&recvnum, &recvbuf[2], 1);
 				memcpy(&t, &recvbuf[3], 1);
@@ -297,7 +298,7 @@ bool pushFile(const char filename[], int type) {//type=1ÎªÎÄ±¾¸ñÊ½(txt)£¬2Îª¶þ½ø
 			printTime(); fprintf(fp, "´«ÊäÊ§°Ü£ºÎ´ÄÜ´ò¿ª´ËÎÄ¼þ\n");
 			return false;
 		}
-		int len = sendRequest(WRITE_REQUEST, filename, type);
+		int len = sendRequest(WRQ, filename, type);
 		int blocknum = 0;
 		while (true) {
 			len = recvfrom_time(sServSock, recvbuf, BUFFER_SIZE, (LPSOCKADDR)&addr, &addrLen, sendbuf, len + 4, blocknum);
@@ -309,18 +310,18 @@ bool pushFile(const char filename[], int type) {//type=1ÎªÎÄ±¾¸ñÊ½(txt)£¬2Îª¶þ½ø
 					return false;
 				}
 				printf("Ó¦´ð³¬Ê±£¬ÖØ´«Request!\n");
-				len = sendRequest(WRITE_REQUEST, filename, type);
+				len = sendRequest(WRQ, filename, type);
 			}
 			else if (len == -1) {
 				printf("´«ÊäÊ§°Ü£ºerrno=%d\n", WSAGetLastError());
 				printTime(); fprintf(fp, "´«ÊäÊ§°Ü£ºerrno=%d\n", WSAGetLastError());
 				return false;
 			}
-			else if (recvbuf[1] == WRONG_RECV) {
+			else if (recvbuf[1] == ERROR) {
 				dealError(recvbuf);
 				return false;
 			}
-			else if (recvbuf[1] == ACKNOWLEDGEMENT) {
+			else if (recvbuf[1] == ACK) {
 				int recvnum = 0, t = 0;
 				memcpy(&recvnum, &recvbuf[2], 1);
 				memcpy(&t, &recvbuf[3], 1);
@@ -367,7 +368,7 @@ int main() {
 	cout << "ÏÂÔØÎÄ¼þÇëÊäÈë1£¬ÉÏ´«ÎÄ¼þÇëÊäÈë2£º";
 	int op = 1;
 	cin >> op;
-	if (op != READ_REQUEST && op != WRITE_REQUEST) {
+	if (op != RRQ && op != WRQ) {
 		cout << "ÊäÈë´íÎó\n";
 		exit(3);
 	}
@@ -383,7 +384,7 @@ int main() {
 	cin >> filename;
 	DWORD start, end;
 	start = timeGetTime();
-	if (op == READ_REQUEST) {
+	if (op == RRQ) {
 		getFile(filename, type);
 	}
 	else {
