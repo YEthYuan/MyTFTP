@@ -44,7 +44,7 @@ def generateTXTFile():
     if fileSize >= 200:
         print('正在生成TXT文件，请稍候... ...')
     # 生成指定大小的TXT档
-    filename = getnowdatatime(3) + '_' + size + 'MB.txt'
+    filename = size + 'MB.txt'
     print(f'文件名：{filename}')
     # 设置文件保存的路径
     filepath = '..\\Expr1\\'
