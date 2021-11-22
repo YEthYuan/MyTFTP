@@ -41,6 +41,16 @@
 #define VERSION_NOT_SUPPORT 2
 #define INPUT_WRONG_COMMAND 3
 
+/*   定义tftp错误码   */
+#define NOT_DEFINED 0
+#define FILE_NOT_FOUND 1
+#define ACCESS_VIOLATION 2
+#define ALLOCATION_EXCEEDED 3
+#define ILLEGAL_OPERATION 4
+#define UNKNOWN_ID 5
+#define FILE_ALREADY_EXIST 6
+#define USER_NOT_FOUND 7
+
 /*   定义常规变量   */
 #define BUFFER_SIZE 1024		//缓冲区大小
 #define RECV_LOOP_COUNT 6		//超时最大重发次数
@@ -102,6 +112,8 @@ int main()
 	addr.sin_addr.S_un.S_addr = inet_addr(ip);
 	addr.sin_port = htons(port);
 	sServSock = socket(AF_INET, SOCK_DGRAM, 0);
+
+
 	cout << "下载文件请输入1，上传文件请输入2：";
 	int op = 1;
 	cin >> op;
