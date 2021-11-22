@@ -113,21 +113,36 @@ int main()
 	addr.sin_port = htons(port);
 	sServSock = socket(AF_INET, SOCK_DGRAM, 0);
 
+	int mode_sel = 0;
+	int op, type;
+	printf("\n\n***************************Yuan Ye's TFTP***************************\n");
+	printf("1. 下载纯文本文件； 2. 上传纯文本文件； 3. 下载二进制文件； 4. 上传二进制文件.\n\n");
+	printf("请选择服务：");
+	scanf("%d", &mode_sel);
+	switch (mode_sel)
+	{
+	case 1:
+		op = 1;
+		type = 1;
+		break;
+	case 2:
+		op = 2;
+		type = 1;
+		break;
+	case 3:
+		op = 1;
+		type = 2;
+		break;
+	case 4:
+		op = 2;
+		type = 2;
+		break;
+	default:
+		cout << "输入错误\n";
+		exit(INPUT_WRONG_COMMAND);
+		break;
+	}
 
-	cout << "下载文件请输入1，上传文件请输入2：";
-	int op = 1;
-	cin >> op;
-	if (op != RRQ && op != WRQ) {
-		cout << "输入错误\n";
-		exit(INPUT_WRONG_COMMAND);
-	}
-	cout << "请输入想要传输的文件类型(文本文件-1，二进制文件-2)：";
-	int type = 1;
-	cin >> type;
-	if (type != 1 && type != 2) {
-		cout << "输入错误\n";
-		exit(INPUT_WRONG_COMMAND);
-	}
 	cout << "请输入文件名(含后缀)：";
 	char filename[20] = "1.txt";
 	cin >> filename;
@@ -145,7 +160,7 @@ int main()
 	fseek(file, 0, SEEK_END);
 	long size = ftell(file);
 	fclose(file);
-	double speed = size == 0 ? 0 : 8 * size / time / 1000;
+	double speed = ((size == 0) ? 0 : (8 * size / time / 1000));
 	cout << "平均传输速率：" << speed << "Kbps\n";
 	closesocket(sServSock);
 	fclose(fp);
