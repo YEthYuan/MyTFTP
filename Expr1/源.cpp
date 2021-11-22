@@ -75,7 +75,7 @@ FILE* fp = fopen("log.txt", "a+");
 SOCKET sServSock;
 sockaddr_in addr;
 int addrLen = sizeof(addr);
-char ip[20] = "10.201.179.86";	//服务器IP
+char ip[20] = "10.12.188.22";	//服务器IP
 int port = 69;					//服务器端口号
 
 /*   声明函数   */
@@ -268,15 +268,15 @@ void dealError(const char buf[])
 	if (buf[1] != ERROR) return;
 	cout << "传输失败："; printTime(); fprintf(fp, "传输失败：");
 	switch (buf[3]) {
-	case 0:cout << "未定义："; fprintf(fp, "未定义："); break;
-	case 1:cout << "文件未找到："; fprintf(fp, "文件未找到："); break;
-	case 2:cout << "访问被拒绝："; fprintf(fp, "访问被拒绝："); break;
-	case 3:cout << "磁盘满或超出可分配空间："; fprintf(fp, "磁盘满或超出可分配空间："); break;
-	case 4:cout << "非法的TFTP操作:"; fprintf(fp, "非法的TFTP操作:"); break;
-	case 5:cout << "未知的传输:"; fprintf(fp, "未知的传输:"); break;
-	case 6:cout << "文件已存在:"; fprintf(fp, "文件已存在:"); break;
-	case 7:cout << "没有该用户:"; fprintf(fp, "没有该用户:"); break;
-	default:cout << "未知错误号：" << (int)buf[3]; fprintf(fp, "未知错误号：%d", (int)buf[3]); break;
+	case NOT_DEFINED:cout << "[ERROR: 0] 未定义："; fprintf(fp, "[ERROR: 0] 未定义："); break;
+	case FILE_NOT_FOUND:cout << "[ERROR: 1] 文件未找到："; fprintf(fp, "[ERROR: 1] 文件未找到："); break;
+	case ACCESS_VIOLATION:cout << "[ERROR: 2] 访问被拒绝："; fprintf(fp, "[ERROR: 2] 访问被拒绝："); break;
+	case ALLOCATION_EXCEEDED:cout << "[ERROR: 3] 磁盘满或超出可分配空间："; fprintf(fp, "[ERROR: 3] 磁盘满或超出可分配空间："); break;
+	case ILLEGAL_OPERATION:cout << "[ERROR: 4] 非法的TFTP操作:"; fprintf(fp, "[ERROR: 4] 非法的TFTP操作:"); break;
+	case UNKNOWN_ID:cout << "[ERROR: 5] 未知的传输:"; fprintf(fp, "[ERROR: 5] 未知的传输:"); break;
+	case FILE_ALREADY_EXIST:cout << "[ERROR: 6] 文件已存在:"; fprintf(fp, "[ERROR: 6] 文件已存在:"); break;
+	case USER_NOT_FOUND:cout << "[ERROR: 7] 没有该用户:"; fprintf(fp, "[ERROR: 7] 没有该用户:"); break;
+	default:cout << "[ERROR: ?] 未知错误号：" << (int)buf[3]; fprintf(fp, "[ERROR: ?] 未知错误号：%d", (int)buf[3]); break;
 	}
 	cout << buf + 4 << '\n'; fprintf(fp, "%s\n", buf + 4);
 }
