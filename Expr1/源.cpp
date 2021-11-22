@@ -25,6 +25,8 @@
 #include <ctime>
 #include <list>
 #include <algorithm>
+#pragma comment(lib, "Ws2_32.lib")
+#pragma comment(lib, "winmm.lib")
 
 /*   定义包类型   */
 #define RRQ 1					//读文件请求包：Read request
@@ -45,6 +47,18 @@
 #define TIME_OUT_SEC 5			//超时时间
 
 using namespace std;
+template <typename T>
+void input(T& t)
+{
+	char c;
+	cin.get(c);
+	if (c != '\n')
+	{
+		cin.putback(c);
+		cin >> t;
+		cin.get();    //清楚输入后留下的回车，或者直接清空缓存区也可
+	}
+}
 
 /*   初始化一些变量   */
 FILE* fp = fopen("log.txt", "a+");
@@ -70,17 +84,20 @@ int main()
 	WSADATA wsaData;
 	int nRc = WSAStartup(0x0101, &wsaData);
 	if (nRc) {
-		exit(1);
+		exit(START_UP_ERROR);
 	}
 	if (wsaData.wVersion != 0x0101) {
-		printf("Winsocket版本支持错误！本代码仅支持版本0x0101! \n");
+		printf("抱歉，当前Winsocket版本为0x%X, 本代码仅支持版本0x0101! \n", wsaData.wVersion);
 		WSACleanup();
-		exit(2);
+		exit(VERSION_NOT_SUPPORT);
 	}
-	cout << "请输入服务器IP：";
-	cin >> ip;
-	cout << "请输入服务器端口号：";
-	cin >> port;
+
+	printf("直接回车使用默认服务器IP %s, 否则, 请输入新的服务器IP并回车:", ip);
+	input<char [20]>(ip);
+
+	printf("直接回车使用默认服务器Port %d, 否则, 请输入新的服务器Port并回车:", port);
+	input<int>(port);
+
 	addr.sin_family = AF_INET;
 	addr.sin_addr.S_un.S_addr = inet_addr(ip);
 	addr.sin_port = htons(port);
@@ -90,14 +107,14 @@ int main()
 	cin >> op;
 	if (op != RRQ && op != WRQ) {
 		cout << "输入错误\n";
-		exit(3);
+		exit(INPUT_WRONG_COMMAND);
 	}
 	cout << "请输入想要传输的文件类型(文本文件-1，二进制文件-2)：";
 	int type = 1;
 	cin >> type;
 	if (type != 1 && type != 2) {
 		cout << "输入错误\n";
-		exit(3);
+		exit(INPUT_WRONG_COMMAND);
 	}
 	cout << "请输入文件名(含后缀)：";
 	char filename[20] = "1.txt";
