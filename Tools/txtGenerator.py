@@ -47,7 +47,7 @@ def generateTXTFile():
     filename = getnowdatatime(3) + '_' + size + 'MB.txt'
     print(f'文件名：{filename}')
     # 设置文件保存的路径
-    filepath = 'C:\\Users\\' + getusername() + '\\Desktop\\'
+    filepath = '..\\Expr1\\'
     f = open(filepath + filename, 'w')
     # 获取开始时间
     starttime = getnowdatatime()
