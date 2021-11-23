@@ -19,6 +19,7 @@
 #include <winsock2.h>
 #endif
 #endif
+#include <windows.h>
 #include <cstdio>
 #include <iostream>
 #include <cstring>
@@ -75,7 +76,7 @@ FILE* fp = fopen("log.txt", "a+");
 SOCKET sServSock;
 sockaddr_in addr;
 int addrLen = sizeof(addr);
-char ip[20] = "10.12.188.22";	//·þÎñÆ÷IP
+char ip[20] = "25.6.144.101";	//·þÎñÆ÷IP
 int port = 69;					//·þÎñÆ÷¶Ë¿ÚºÅ
 
 /*   ÉùÃ÷º¯Êý   */
@@ -142,26 +143,33 @@ int main()
 		exit(INPUT_WRONG_COMMAND);
 		break;
 	}
-
+	bool status = false;
 	cout << "ÇëÊäÈëÎÄ¼þÃû¼°ºó×º(Èç1.txt)£º";
 	char filename[20] = "1.txt";
 	cin >> filename;
 	DWORD start, end;
 	start = timeGetTime();
 	if (op == RRQ) {
-		getFile(filename, type);
+		status = getFile(filename, type);
 	}
 	else {
-		pushFile(filename, type);
+		status = pushFile(filename, type);
 	}
 	end = timeGetTime();
-	double time = (end - start) * 1.0 / 1000;
-	FILE* file = fopen(filename, "r+");
-	fseek(file, 0, SEEK_END);
-	long size = ftell(file);
-	fclose(file);
-	double speed = ((size == 0) ? 0 : (1.0 * size / time / 1024 / 1024));
-	cout << "Æ½¾ù´«ÊäËÙÂÊ£º" << speed << "MB/s\n";
+	if (status)
+	{
+		double time = (end - start) * 1.0 / 1000;
+		FILE* file = fopen(filename, "r+");
+		fseek(file, 0, SEEK_END);
+		long size = ftell(file);
+		fclose(file);
+		double speed = ((size == 0) ? 0 : (1.0 * size / time / 1024 / 1024));
+		cout << "Æ½¾ù´«ÊäËÙÂÊ£º" << speed << "MB/s\n";
+	}
+	else
+	{
+		cout << "ÏµÍ³¼ì²âµ½µ±Ç°ÍøÂç»·¾³·Ç³£¶ñÁÓ£¬Çë´ýÍøÂç»·¾³½ÏºÃÊ±ÔÙ´Î³¢ÊÔ£¡" << endl;
+	}
 	closesocket(sServSock);
 	fclose(fp);
 	return 0;
@@ -191,22 +199,32 @@ int recvfrom_time(SOCKET fd, char recvbuf[], size_t buf_n, sockaddr* addr, int* 
 	struct timeval tv;
 	fd_set readfds;
 	int n = 0;
+	bool flag = 0;
 	for (int i = 0; i < MAX_CONN; i++) {
-		FD_ZERO(&readfds);
-		FD_SET(fd, &readfds);
-		tv.tv_sec = TIME_OUT_SEC;
-		tv.tv_usec = 0;
-		select(fd + 1, &readfds, NULL, NULL, &tv);
-		if (FD_ISSET(fd, &readfds)) {
-			if ((n = recvfrom(fd, recvbuf, buf_n, 0, addr, len)) >= 0) {
-				return n;
-			}
+		//FD_ZERO(&readfds);
+		//FD_SET(fd, &readfds);
+		//tv.tv_sec = TIME_OUT_SEC;
+		//tv.tv_usec = 0;
+		//select(fd + 1, &readfds, NULL, NULL, &tv);
+		//if (FD_ISSET(fd, &readfds)) {
+		//	if ((n = recvfrom(fd, recvbuf, buf_n, 0, addr, len)) >= 0) {
+		//		return n;
+		//	}
+		//}
+		if (flag == 0 && (n = recvfrom(fd, recvbuf, buf_n, 0, addr, len)) >= 0) {
+			return n;
 		}
 		if (blocknum == 0)
 			return -2;
 		//ÖØ´«ÄÚÈÝ
+		flag = 1;
+		Sleep(i * i * i * 345);
 		sendto(fd, sendbuf, sendbufsize, 0, addr, *len);
-		printf("³¬Ê±ÖØ´«:sendBlockNum=%d!\n", blocknum);
+		if (flag == 1 && (n = recvfrom(fd, recvbuf, buf_n, 0, addr, len)) >= 0)
+		{
+			return n;
+		}
+		printf("!!![µÚ %d/%d ´Î³¢ÊÔÁ¬½Ó]!!! Á¬½Ó³¬Ê±£¬ÕýÔÚÖØÐÂ·¢ËÍBlock %d. (µÈ´ý %d ms)\n", i, MAX_CONN, blocknum, i * i * i * 345);
 	}
 	return -1;
 }
@@ -450,7 +468,7 @@ bool pushFile(const char filename[], int type) //type=1ÎªÎÄ±¾¸ñÊ½(txt)£¬2Îª¶þ½øÖ
 					memcpy(&sendbuf[2], &t, 1);
 				}
 				sendto(sServSock, sendbuf, len + 4, 0, (LPSOCKADDR)&addr, addrLen);
-				printf(" ... ÕýÔÚ´«ÊäBlock %d\t... ´«Êä½ø¶È [%.2f %%] .......................... \r", blocknum, 100.0 * current_size / total_size);
+				printf(" ... ÕýÔÚ´«ÊäBlock %d\t... ´«Êä½ø¶È [%.2f %%] (%.2lf MB / %.2lf MB).................. \r", blocknum, 100.0 * current_size / total_size, 1.0 * current_size / 1024.0 / 1024.0, total_size * 1.0 / 1024 / 1024);
 			}
 		}
 		fclose(readfp);
@@ -506,7 +524,7 @@ bool pushFile(const char filename[], int type) //type=1ÎªÎÄ±¾¸ñÊ½(txt)£¬2Îª¶þ½øÖ
 					memcpy(&sendbuf[2], &t, 1);
 				}
 				sendto(sServSock, sendbuf, len + 4, 0, (LPSOCKADDR)&addr, addrLen);
-				printf(" ... ÕýÔÚ´«ÊäBlock %d\t... ´«Êä½ø¶È [%.2f %%] .......................... \r", blocknum, 100.0 * current_size / total_size);
+				printf(" ... ÕýÔÚ´«ÊäBlock %d\t... ´«Êä½ø¶È [%.2f %%] (%.2lf MB / %.2lf MB).................. \r", blocknum, 100.0 * current_size / total_size, 1.0 * current_size / 1024.0 / 1024.0, total_size * 1.0 / 1024 / 1024);
 			}
 		}
 		fclose(readfp);
