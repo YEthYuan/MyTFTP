@@ -115,7 +115,7 @@ int main()
 
 	int mode_sel = 0;
 	int op, type;
-	printf("\n\n***************************Yuan Ye's TFTP***************************\n");
+	printf("\n\n***************************Yuan Ye's TFTP Client***************************\n");
 	printf("1. ÏÂÔØ´¿ÎÄ±¾ÎÄ¼ş£» 2. ÉÏ´«´¿ÎÄ±¾ÎÄ¼ş£» 3. ÏÂÔØ¶ş½øÖÆÎÄ¼ş£» 4. ÉÏ´«¶ş½øÖÆÎÄ¼ş.\n\n");
 	printf("ÇëÑ¡Ôñ·şÎñ£º");
 	scanf("%d", &mode_sel);
@@ -160,8 +160,8 @@ int main()
 	fseek(file, 0, SEEK_END);
 	long size = ftell(file);
 	fclose(file);
-	double speed = ((size == 0) ? 0 : (8 * size / time / 1000));
-	cout << "Æ½¾ù´«ÊäËÙÂÊ£º" << speed << "Kbps\n";
+	double speed = ((size == 0) ? 0 : (1.0 * size / time / 1024 / 1024));
+	cout << "Æ½¾ù´«ÊäËÙÂÊ£º" << speed << "MB/s\n";
 	closesocket(sServSock);
 	fclose(fp);
 	return 0;
@@ -441,6 +441,7 @@ bool pushFile(const char filename[], int type) //type=1ÎªÎÄ±¾¸ñÊ½(txt)£¬2Îª¶ş½øÖ
 				recvnum = (recvnum << 8) + t;
 				if (blocknum == recvnum) {//Õı³£¿é
 					blocknum++;
+					if (blocknum == 65536) blocknum = 0;
 					current_size += 512;
 					len = fread(sendbuf + 4, 1, 512, readfp);
 					if (len == 0) break;
@@ -449,7 +450,7 @@ bool pushFile(const char filename[], int type) //type=1ÎªÎÄ±¾¸ñÊ½(txt)£¬2Îª¶ş½øÖ
 					memcpy(&sendbuf[2], &t, 1);
 				}
 				sendto(sServSock, sendbuf, len + 4, 0, (LPSOCKADDR)&addr, addrLen);
-				printf(" ... ÕıÔÚ´«ÊäBlock %d\t... ´«Êä½ø¶È [%.2f %%]\r", blocknum, 100.0 * current_size / total_size);
+				printf(" ... ÕıÔÚ´«ÊäBlock %d\t... ´«Êä½ø¶È [%.2f %%] .......................... \r", blocknum, 100.0 * current_size / total_size);
 			}
 		}
 		fclose(readfp);
@@ -496,6 +497,7 @@ bool pushFile(const char filename[], int type) //type=1ÎªÎÄ±¾¸ñÊ½(txt)£¬2Îª¶ş½øÖ
 				recvnum = (recvnum << 8) + t;
 				if (blocknum == recvnum) {//Õı³£¿é
 					blocknum++;
+					if (blocknum == 65536) blocknum = 0;
 					current_size += 512;
 					len = fread(sendbuf + 4, 1, 512, readfp);
 					if (len == 0) break;
@@ -504,7 +506,7 @@ bool pushFile(const char filename[], int type) //type=1ÎªÎÄ±¾¸ñÊ½(txt)£¬2Îª¶ş½øÖ
 					memcpy(&sendbuf[2], &t, 1);
 				}
 				sendto(sServSock, sendbuf, len + 4, 0, (LPSOCKADDR)&addr, addrLen);
-				printf(" ... ÕıÔÚ´«ÊäBlock %d\t... ´«Êä½ø¶È [%.2f %%]\r", blocknum, 100.0 * current_size / total_size);
+				printf(" ... ÕıÔÚ´«ÊäBlock %d\t... ´«Êä½ø¶È [%.2f %%] .......................... \r", blocknum, 100.0 * current_size / total_size);
 			}
 		}
 		fclose(readfp);
