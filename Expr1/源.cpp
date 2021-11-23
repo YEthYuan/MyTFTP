@@ -55,7 +55,7 @@
 /*   定义常规变量   */
 #define BUF_LEN 1024		//缓冲区大小
 #define MAX_CONN 6		//超时最大重发次数
-#define TIME_OUT_SEC 5			//超时时间
+#define TIME_OUT_SEC 2			//超时时间
 
 using namespace std;
 template <typename T>
@@ -76,7 +76,7 @@ FILE* fp = fopen("log.txt", "a+");
 SOCKET sServSock;
 sockaddr_in addr;
 int addrLen = sizeof(addr);
-char ip[20] = "25.6.144.101";	//服务器IP
+char ip[20] = "127.0.0.1";		//服务器IP
 int port = 69;					//服务器端口号
 
 /*   声明函数   */
