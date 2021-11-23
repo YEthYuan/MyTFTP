@@ -79,6 +79,7 @@ int addrLen = sizeof(addr);
 char ip[20] = "127.0.0.1";		//·şÎñÆ÷IP
 int port = 69;					//·şÎñÆ÷¶Ë¿ÚºÅ
 int resend_count = 0;			//ÖØ´«´ÎÊıÀÛ¼Æ
+int total_count = 0;
 
 /*   ÉùÃ÷º¯Êı   */
 void printTime();
@@ -465,6 +466,7 @@ bool pushFile(const char filename[], int type) //type=1ÎªÎÄ±¾¸ñÊ½(txt)£¬2Îª¶ş½øÖ
 				recvnum = (recvnum << 8) + t;
 				if (blocknum == recvnum) {//Õı³£¿é
 					blocknum++;
+					total_count++;
 					if (blocknum == 65536) blocknum = 0;
 					current_size += 512;
 					len = fread(sendbuf + 4, 1, 512, readfp);
@@ -521,6 +523,7 @@ bool pushFile(const char filename[], int type) //type=1ÎªÎÄ±¾¸ñÊ½(txt)£¬2Îª¶ş½øÖ
 				recvnum = (recvnum << 8) + t;
 				if (blocknum == recvnum) {//Õı³£¿é
 					blocknum++;
+					total_count++;
 					if (blocknum == 65536) blocknum = 0;
 					current_size += 512;
 					len = fread(sendbuf + 4, 1, 512, readfp);
