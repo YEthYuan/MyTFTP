@@ -168,7 +168,7 @@ int main()
 		double speed = ((size == 0) ? 0 : (1.0 * size / time / 1024 / 1024));
 		cout << "平均传输速率：" << speed << "MB/s\n";
 		cout << "累计重传次数：" << resend_count << endl;
-
+		printf("信道嘈杂度：%.4f\n", 1.0 * resend_count / total_count);
 	}
 	else
 	{
@@ -196,7 +196,7 @@ void sendACK(int blocknum)
 	int t = blocknum >> 8;
 	memcpy(&buf[2], &t, 1);
 	sendto(sServSock, buf, 4, 0, (LPSOCKADDR)&addr, addrLen);
-	printf("sendACK=%d\n", blocknum);
+	printf("已接收第 %d 块数据", blocknum);
 }
 
 int recvfrom_time(SOCKET fd, char recvbuf[], size_t buf_n, sockaddr* addr, int* len, const char sendbuf[], int sendbufsize, int blocknum) 
@@ -241,6 +241,7 @@ int recvfrom_time(SOCKET fd, char recvbuf[], size_t buf_n, sockaddr* addr, int* 
 	struct timeval tv;
 	fd_set readfds;
 	int n = 0;
+	bool flag = 0;
 	for (int i = 0; i < MAX_CONN; i++) {
 		FD_ZERO(&readfds);
 		FD_SET(fd, &readfds);
@@ -255,8 +256,9 @@ int recvfrom_time(SOCKET fd, char recvbuf[], size_t buf_n, sockaddr* addr, int* 
 		if (ACKnum == 0)
 			return -2;
 		//重传内容
+		Sleep(1000);
 		sendACK(ACKnum);
-		printf("超时重传:");
+		printf("\n超时重传:");
 	}
 	return -1;
 }
@@ -343,12 +345,13 @@ bool getFile(const char filename[], int type) //type=1为文本格式(txt)，2为二进制
 					blockNum++;
 					errortimes = 0;
 					fwrite(recvbuf + 4, 1, len - 4, writefp);
+					putchar('\r');
 					sendACK(blockNum);
 				}
 				else {
 					errortimes++;
 					if (errortimes < MAX_CONN) {
-						cout << "重传：";
+						cout << "\n重传：";
 						sendACK(blockNum);
 					}
 					else {
@@ -395,12 +398,13 @@ bool getFile(const char filename[], int type) //type=1为文本格式(txt)，2为二进制
 					blockNum++;
 					recvbuf[len] = 0;
 					printTime(); fprintf(writefp, "%s", recvbuf + 4);
+					putchar('\r');
 					sendACK(blockNum);
 				}
 				else {
 					errortimes++;
 					if (errortimes < MAX_CONN) {
-						cout << "重传：";
+						cout << "\n重传：";
 						sendACK(blockNum);
 					}
 					else {
