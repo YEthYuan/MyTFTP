@@ -78,6 +78,7 @@ sockaddr_in addr;
 int addrLen = sizeof(addr);
 char ip[20] = "127.0.0.1";		//服务器IP
 int port = 69;					//服务器端口号
+int resend_count = 0;			//重传次数累计
 
 /*   声明函数   */
 void printTime();
@@ -165,9 +166,12 @@ int main()
 		fclose(file);
 		double speed = ((size == 0) ? 0 : (1.0 * size / time / 1024 / 1024));
 		cout << "平均传输速率：" << speed << "MB/s\n";
+		cout << "累计重传次数：" << resend_count << endl;
+
 	}
 	else
 	{
+		cout << "累计重传次数：" << resend_count << endl;
 		cout << "系统检测到当前网络环境非常恶劣，请待网络环境较好时再次尝试！" << endl;
 	}
 	closesocket(sServSock);
@@ -201,30 +205,32 @@ int recvfrom_time(SOCKET fd, char recvbuf[], size_t buf_n, sockaddr* addr, int* 
 	int n = 0;
 	bool flag = 0;
 	for (int i = 0; i < MAX_CONN; i++) {
-		//FD_ZERO(&readfds);
-		//FD_SET(fd, &readfds);
-		//tv.tv_sec = TIME_OUT_SEC;
-		//tv.tv_usec = 0;
-		//select(fd + 1, &readfds, NULL, NULL, &tv);
-		//if (FD_ISSET(fd, &readfds)) {
-		//	if ((n = recvfrom(fd, recvbuf, buf_n, 0, addr, len)) >= 0) {
-		//		return n;
-		//	}
-		//}
-		if (flag == 0 && (n = recvfrom(fd, recvbuf, buf_n, 0, addr, len)) >= 0) {
-			return n;
+		FD_ZERO(&readfds);
+		FD_SET(fd, &readfds);
+		tv.tv_sec = TIME_OUT_SEC;
+		tv.tv_usec = 0;
+		select(fd + 1, &readfds, NULL, NULL, &tv);
+		if (FD_ISSET(fd, &readfds)) {
+			if ((n = recvfrom(fd, recvbuf, buf_n, 0, addr, len)) >= 0) {
+				if (flag == 1)printf("--------------------第 %d 次重传成功！--------------------\n", i);
+				return n;
+			}
 		}
+		//if (flag == 0 && (n = recvfrom(fd, recvbuf, buf_n, 0, addr, len)) >= 0) {
+		//	return n;
+		//}
 		if (blocknum == 0)
 			return -2;
 		//重传内容
 		flag = 1;
 		Sleep(i * i * i * 345);
 		sendto(fd, sendbuf, sendbufsize, 0, addr, *len);
-		if (flag == 1 && (n = recvfrom(fd, recvbuf, buf_n, 0, addr, len)) >= 0)
-		{
-			return n;
-		}
-		printf("!!![第 %d/%d 次尝试连接]!!! 连接超时，正在重新发送Block %d. (等待 %d ms)\n", i, MAX_CONN, blocknum, i * i * i * 345);
+		resend_count++;
+		//if (flag == 1 && (n = recvfrom(fd, recvbuf, buf_n, 0, addr, len)) >= 0)
+		//{
+		//	return n;
+		//}
+		printf("!!![第 %d/%d 次尝试连接]!!! 连接超时，正在重新发送Block %d. (等待 %d ms)\n", i + 1, MAX_CONN, blocknum, i * i * i * 345);
 	}
 	return -1;
 }
