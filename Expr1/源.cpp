@@ -52,8 +52,8 @@
 #define USER_NOT_FOUND 7
 
 /*   ¶¨Òå³£¹æ±äÁ¿   */
-#define BUFFER_SIZE 1024		//»º³åÇø´óĞ¡
-#define RECV_LOOP_COUNT 6		//³¬Ê±×î´óÖØ·¢´ÎÊı
+#define BUF_LEN 1024		//»º³åÇø´óĞ¡
+#define MAX_CONN 6		//³¬Ê±×î´óÖØ·¢´ÎÊı
 #define TIME_OUT_SEC 5			//³¬Ê±Ê±¼ä
 
 using namespace std;
@@ -191,7 +191,7 @@ int recvfrom_time(SOCKET fd, char recvbuf[], size_t buf_n, sockaddr* addr, int* 
 	struct timeval tv;
 	fd_set readfds;
 	int n = 0;
-	for (int i = 0; i < RECV_LOOP_COUNT; i++) {
+	for (int i = 0; i < MAX_CONN; i++) {
 		FD_ZERO(&readfds);
 		FD_SET(fd, &readfds);
 		tv.tv_sec = TIME_OUT_SEC;
@@ -216,7 +216,7 @@ int recvfrom_time(SOCKET fd, char recvbuf[], size_t buf_n, sockaddr* addr, int* 
 	struct timeval tv;
 	fd_set readfds;
 	int n = 0;
-	for (int i = 0; i < RECV_LOOP_COUNT; i++) {
+	for (int i = 0; i < MAX_CONN; i++) {
 		FD_ZERO(&readfds);
 		FD_SET(fd, &readfds);
 		tv.tv_sec = TIME_OUT_SEC;
@@ -240,8 +240,8 @@ int sendRequest(int op, const char filename[], int type) //type=1ÎªÎÄ±¾¸ñÊ½(txt)
 {
 	char buf[516];
 	if (op != RRQ && op != WRQ) {
-		cout << "makeRequest Error!\n";
-		printTime(); fprintf(fp, "makeRequest Error!\n");
+		cout << "ÎŞ·¨´´½¨ÇëÇó£¡ÇëÖØĞÂÊäÈëÕıÈ·µÄ²ÎÊı£¡\n";
+		printTime(); fprintf(fp, "ÎŞ·¨´´½¨ÇëÇó£¡ÇëÖØĞÂÊäÈëÕıÈ·µÄ²ÎÊı£¡\n");
 		return false;
 	}
 	printTime();
@@ -283,26 +283,26 @@ void dealError(const char buf[])
 
 bool getFile(const char filename[], int type) //type=1ÎªÎÄ±¾¸ñÊ½(txt)£¬2Îª¶ş½øÖÆÎÄ¼ş
 {
-	char recvbuf[BUFFER_SIZE];
+	char recvbuf[BUF_LEN];
 	if (type == 2) {
 		FILE* writefp = fopen(filename, "wb+");
 		int len = sendRequest(RRQ, filename, type);
 		int blockNum = 0, errortimes = 0, senderror = 0;
 		while (true) {
-			len = recvfrom_time(sServSock, recvbuf, BUFFER_SIZE, (LPSOCKADDR)&addr, &addrLen, blockNum);
+			len = recvfrom_time(sServSock, recvbuf, BUF_LEN, (LPSOCKADDR)&addr, &addrLen, blockNum);
 			if (len == -2) {
 				senderror++;
-				if (senderror >= RECV_LOOP_COUNT) {
-					printf("[ERROR: 0x10] ´«ÊäÊ§°Ü£ºÖØ´«Request´ÎÊı¹ı¶à!\n");
-					printTime(); fprintf(fp, "[ERROR: 0x10] ´«ÊäÊ§°Ü£ºÖØ´«Request´ÎÊı¹ı¶à!\n");
+				if (senderror >= MAX_CONN) {
+					printf("[ERROR: 0x10] ÎŞ·¨Á¬½Óµ½·şÎñÆ÷£¬Çë¼ì²éIP¼°¶Ë¿ÚºÅÊÇ·ñÕıÈ·ÉèÖÃ¡£ÕâÒ²ÓĞ¿ÉÄÜÊÇÒòÎªÄã´íÎóµØÉèÖÃÁË·À»ğÇ½²ßÂÔ¡£\n");
+					printTime(); fprintf(fp, "[ERROR: 0x10] ÎŞ·¨Á¬½Óµ½·şÎñÆ÷£¬Çë¼ì²éIP¼°¶Ë¿ÚºÅÊÇ·ñÕıÈ·ÉèÖÃ¡£ÕâÒ²ÓĞ¿ÉÄÜÊÇÒòÎªÄã´íÎóµØÉèÖÃÁË·À»ğÇ½²ßÂÔ¡£\n");
 					return false;
 				}
-				printf("[WARNING: 0x90] Ó¦´ğ³¬Ê±£¬ÖØ´«Request!\n");
+				printf("[WARNING: 0x90] Á¬½Ó³¬Ê±£¬ÕıÔÚ³¢ÊÔÖØĞÂÁ¬½Ó·şÎñÆ÷\n");
 				len = sendRequest(RRQ, filename, type);
 			}
 			else if (len == -1) {
-				printf("[ERROR: %d]´«ÊäÊ§°Ü.\n", WSAGetLastError());
-				printTime(); fprintf(fp, "[ERROR: %d]´«ÊäÊ§°Ü.\n", WSAGetLastError());
+				printf("[ERROR: %d]´«ÊäÊ§°Ü£¬Çë¸ù¾İÌá¹©µÄ´íÎóÂë¼ì²éÁ¬½ÓÎÊÌâ£¡\n", WSAGetLastError());
+				printTime(); fprintf(fp, "[ERROR: %d]´«ÊäÊ§°Ü£¬Çë¸ù¾İÌá¹©µÄ´íÎóÂë¼ì²éÁ¬½ÓÎÊÌâ£¡\n", WSAGetLastError());
 				return false;
 			}
 			else if (recvbuf[1] == ERROR) {
@@ -322,13 +322,13 @@ bool getFile(const char filename[], int type) //type=1ÎªÎÄ±¾¸ñÊ½(txt)£¬2Îª¶ş½øÖÆ
 				}
 				else {
 					errortimes++;
-					if (errortimes < RECV_LOOP_COUNT) {
+					if (errortimes < MAX_CONN) {
 						cout << "ÖØ´«£º";
 						sendACK(blockNum);
 					}
 					else {
-						printf("[ERROR: 0x11] ÎÄ¼ş´«ÊäÊ§°Ü£ºÎ´ÊÕµ½ÕıÈ·Êı¾İ°ü£¡\n");
-						printTime(); fprintf(fp, "[ERROR: 0x11] ÎÄ¼ş´«ÊäÊ§°Ü£ºÎ´ÊÕµ½ÕıÈ·Êı¾İ°ü£¡\n");
+						printf("[ERROR: 0x11] ÎÄ¼ş½ÓÊÕ´íÎó£¬ÇëÔÚÍøÂç»·¾³ÔÊĞíÊ±ÖØĞÂ³¢ÊÔ½ÓÊÕÎÄ¼ş£¡\n");
+						printTime(); fprintf(fp, "[ERROR: 0x11] ÎÄ¼ş½ÓÊÕ´íÎó£¬ÇëÔÚÍøÂç»·¾³ÔÊĞíÊ±ÖØĞÂ³¢ÊÔ½ÓÊÕÎÄ¼ş£¡\n");
 						return false;
 					}
 				}
@@ -341,20 +341,20 @@ bool getFile(const char filename[], int type) //type=1ÎªÎÄ±¾¸ñÊ½(txt)£¬2Îª¶ş½øÖÆ
 		int len = sendRequest(RRQ, filename, type);
 		int blockNum = 0, errortimes = 0, senderror = 0;
 		while (true) {
-			len = recvfrom_time(sServSock, recvbuf, BUFFER_SIZE, (LPSOCKADDR)&addr, &addrLen, blockNum);
+			len = recvfrom_time(sServSock, recvbuf, BUF_LEN, (LPSOCKADDR)&addr, &addrLen, blockNum);
 			if (len == -2) {
 				senderror++;
-				if (senderror >= RECV_LOOP_COUNT) {
-					printf("[ERROR: 0x10] ´«ÊäÊ§°Ü£ºÖØ´«Request´ÎÊı¹ı¶à!\n");
-					printTime(); fprintf(fp, "[ERROR: 0x10] ´«ÊäÊ§°Ü£ºÖØ´«Request´ÎÊı¹ı¶à!\n");
+				if (senderror >= MAX_CONN) {
+					printf("[ERROR: 0x10] ÎŞ·¨Á¬½Óµ½·şÎñÆ÷£¬Çë¼ì²éIP¼°¶Ë¿ÚºÅÊÇ·ñÕıÈ·ÉèÖÃ¡£ÕâÒ²ÓĞ¿ÉÄÜÊÇÒòÎªÄã´íÎóµØÉèÖÃÁË·À»ğÇ½²ßÂÔ¡£\n");
+					printTime(); fprintf(fp, "[ERROR: 0x10] ÎŞ·¨Á¬½Óµ½·şÎñÆ÷£¬Çë¼ì²éIP¼°¶Ë¿ÚºÅÊÇ·ñÕıÈ·ÉèÖÃ¡£ÕâÒ²ÓĞ¿ÉÄÜÊÇÒòÎªÄã´íÎóµØÉèÖÃÁË·À»ğÇ½²ßÂÔ¡£\n");
 					return false;
 				}
-				printf("[WARNING: 0x90] Ó¦´ğ³¬Ê±£¬ÖØ´«Request!\n");
+				printf("[WARNING: 0x90] Á¬½Ó³¬Ê±£¬ÕıÔÚ³¢ÊÔÖØĞÂÁ¬½Ó·şÎñÆ÷\n");
 				len = sendRequest(RRQ, filename, type);
 			}
 			else if (len == -1) {
-				printf("[ERROR: %d]´«ÊäÊ§°Ü.\n", WSAGetLastError());
-				printTime(); fprintf(fp, "[ERROR: %d]´«ÊäÊ§°Ü.\n", WSAGetLastError());
+				printf("[ERROR: %d]´«ÊäÊ§°Ü£¬Çë¸ù¾İÌá¹©µÄ´íÎóÂë¼ì²éÁ¬½ÓÎÊÌâ£¡\n", WSAGetLastError());
+				printTime(); fprintf(fp, "[ERROR: %d]´«ÊäÊ§°Ü£¬Çë¸ù¾İÌá¹©µÄ´íÎóÂë¼ì²éÁ¬½ÓÎÊÌâ£¡\n", WSAGetLastError());
 				return false;
 			}
 			else if (recvbuf[1] == ERROR) {
@@ -374,13 +374,13 @@ bool getFile(const char filename[], int type) //type=1ÎªÎÄ±¾¸ñÊ½(txt)£¬2Îª¶ş½øÖÆ
 				}
 				else {
 					errortimes++;
-					if (errortimes < RECV_LOOP_COUNT) {
+					if (errortimes < MAX_CONN) {
 						cout << "ÖØ´«£º";
 						sendACK(blockNum);
 					}
 					else {
-						printf("[ERROR: 0x11] ÎÄ¼ş´«ÊäÊ§°Ü£ºÎ´ÊÕµ½ÕıÈ·Êı¾İ°ü£¡\n");
-						printTime(); fprintf(fp, "[ERROR: 0x11] ÎÄ¼ş´«ÊäÊ§°Ü£ºÎ´ÊÕµ½ÕıÈ·Êı¾İ°ü£¡\n");
+						printf("[ERROR: 0x11] ÎÄ¼ş½ÓÊÕ´íÎó£¬ÇëÔÚÍøÂç»·¾³ÔÊĞíÊ±ÖØĞÂ³¢ÊÔ½ÓÊÕÎÄ¼ş£¡\n");
+						printTime(); fprintf(fp, "[ERROR: 0x11] ÎÄ¼ş½ÓÊÕ´íÎó£¬ÇëÔÚÍøÂç»·¾³ÔÊĞíÊ±ÖØĞÂ³¢ÊÔ½ÓÊÕÎÄ¼ş£¡\n");
 						return false;
 					}
 				}
@@ -395,15 +395,15 @@ bool getFile(const char filename[], int type) //type=1ÎªÎÄ±¾¸ñÊ½(txt)£¬2Îª¶ş½øÖÆ
 
 bool pushFile(const char filename[], int type) //type=1ÎªÎÄ±¾¸ñÊ½(txt)£¬2Îª¶ş½øÖÆÎÄ¼ş
 {
-	char recvbuf[BUFFER_SIZE], sendbuf[BUFFER_SIZE];
+	char recvbuf[BUF_LEN], sendbuf[BUF_LEN];
 	memset(sendbuf, 0, sizeof(sendbuf));
 	sendbuf[1] = DATA;
 	int senderror = 0;
 	if (type == 2) {
 		FILE* readfp = fopen(filename, "rb+");
 		if (readfp == NULL) {
-			printf("[ERROR: 0x12] ´«ÊäÊ§°Ü£ºÎ´ÄÜ´ò¿ª´ËÎÄ¼ş\n");
-			printTime(); fprintf(fp, "[ERROR: 0x12] ´«ÊäÊ§°Ü£ºÎ´ÄÜ´ò¿ª´ËÎÄ¼ş\n");
+			printf("[ERROR: 0x12] ÎŞ·¨´ò¿ªÎÄ¼ş£º%s£¬ÇëÈ·ÈÏ¸ÃÎÄ¼şÊÇ·ñÔÚÕıÈ·µÄÂ·¾¶ÏÂ´æÔÚ¡£\n", filename);
+			printTime(); fprintf(fp, "[ERROR: 0x12] ÎŞ·¨´ò¿ªÎÄ¼ş£º%s£¬ÇëÈ·ÈÏ¸ÃÎÄ¼şÊÇ·ñÔÚÕıÈ·µÄÂ·¾¶ÏÂ´æÔÚ¡£\n", filename);
 			exit(4);
 		}
 		int len = sendRequest(WRQ, filename, type);
@@ -414,20 +414,20 @@ bool pushFile(const char filename[], int type) //type=1ÎªÎÄ±¾¸ñÊ½(txt)£¬2Îª¶ş½øÖ
 		fclose(file);
 		long current_size = 0;
 		while (true) {
-			len = recvfrom_time(sServSock, recvbuf, BUFFER_SIZE, (LPSOCKADDR)&addr, &addrLen, sendbuf, len + 4, blocknum);
+			len = recvfrom_time(sServSock, recvbuf, BUF_LEN, (LPSOCKADDR)&addr, &addrLen, sendbuf, len + 4, blocknum);
 			if (len == -2) {
 				senderror++;
-				if (senderror >= RECV_LOOP_COUNT) {
-					printf("[ERROR: 0x11] ´«ÊäÊ§°Ü£ºÖØ´«Request´ÎÊı¹ı¶à!\n");
-					printTime(); fprintf(fp, "[ERROR: 0x11] ´«ÊäÊ§°Ü£ºÖØ´«Request´ÎÊı¹ı¶à!\n");
+				if (senderror >= MAX_CONN) {
+					printf("[ERROR: 0x11] ÎŞ·¨Á¬½Óµ½·şÎñÆ÷£¬Çë¼ì²éIP¼°¶Ë¿ÚºÅÊÇ·ñÕıÈ·ÉèÖÃ¡£ÕâÒ²ÓĞ¿ÉÄÜÊÇÒòÎªÄã´íÎóµØÉèÖÃÁË·À»ğÇ½²ßÂÔ¡£\n");
+					printTime(); fprintf(fp, "[ERROR: 0x11] ÎŞ·¨Á¬½Óµ½·şÎñÆ÷£¬Çë¼ì²éIP¼°¶Ë¿ÚºÅÊÇ·ñÕıÈ·ÉèÖÃ¡£ÕâÒ²ÓĞ¿ÉÄÜÊÇÒòÎªÄã´íÎóµØÉèÖÃÁË·À»ğÇ½²ßÂÔ¡£\n");
 					return false;
 				}
-				printf("[WARNING: 0x90] Ó¦´ğ³¬Ê±£¬ÖØ´«Request!\n");
+				printf("[WARNING: 0x90] Á¬½Ó³¬Ê±£¬ÕıÔÚ³¢ÊÔÖØĞÂÁ¬½Ó·şÎñÆ÷\n");
 				len = sendRequest(WRQ, filename, type);
 			}
 			else if (len == -1) {
-				printf("[ERROR: %d]´«ÊäÊ§°Ü.\n", WSAGetLastError());
-				printTime(); fprintf(fp, "[ERROR: %d]´«ÊäÊ§°Ü.\n", WSAGetLastError());
+				printf("[ERROR: %d]´«ÊäÊ§°Ü£¬Çë¸ù¾İÌá¹©µÄ´íÎóÂë¼ì²éÁ¬½ÓÎÊÌâ£¡\n", WSAGetLastError());
+				printTime(); fprintf(fp, "[ERROR: %d]´«ÊäÊ§°Ü£¬Çë¸ù¾İÌá¹©µÄ´íÎóÂë¼ì²éÁ¬½ÓÎÊÌâ£¡\n", WSAGetLastError());
 				return false;
 			}
 			else if (recvbuf[1] == ERROR) {
@@ -457,8 +457,8 @@ bool pushFile(const char filename[], int type) //type=1ÎªÎÄ±¾¸ñÊ½(txt)£¬2Îª¶ş½øÖ
 	else {
 		FILE* readfp = fopen(filename, "r+");
 		if (readfp == NULL) {
-			printf("[ERROR: 0x12] ´«ÊäÊ§°Ü£ºÎ´ÄÜ´ò¿ª´ËÎÄ¼ş\n");
-			printTime(); fprintf(fp, "[ERROR: 0x12] ´«ÊäÊ§°Ü£ºÎ´ÄÜ´ò¿ª´ËÎÄ¼ş\n");
+			printf("[ERROR: 0x12] ÎŞ·¨´ò¿ªÎÄ¼ş£º%s£¬ÇëÈ·ÈÏ¸ÃÎÄ¼şÊÇ·ñÔÚÕıÈ·µÄÂ·¾¶ÏÂ´æÔÚ¡£\n", filename);
+			printTime(); fprintf(fp, "[ERROR: 0x12] ÎŞ·¨´ò¿ªÎÄ¼ş£º%s£¬ÇëÈ·ÈÏ¸ÃÎÄ¼şÊÇ·ñÔÚÕıÈ·µÄÂ·¾¶ÏÂ´æÔÚ¡£\n", filename);
 			exit(4);
 		}
 		int len = sendRequest(WRQ, filename, type);
@@ -469,20 +469,20 @@ bool pushFile(const char filename[], int type) //type=1ÎªÎÄ±¾¸ñÊ½(txt)£¬2Îª¶ş½øÖ
 		fclose(file);
 		long current_size = 0;
 		while (true) {
-			len = recvfrom_time(sServSock, recvbuf, BUFFER_SIZE, (LPSOCKADDR)&addr, &addrLen, sendbuf, len + 4, blocknum);
+			len = recvfrom_time(sServSock, recvbuf, BUF_LEN, (LPSOCKADDR)&addr, &addrLen, sendbuf, len + 4, blocknum);
 			if (len == -2) {
 				senderror++;
-				if (senderror >= RECV_LOOP_COUNT) {
-					printf("[ERROR: 0x11] ´«ÊäÊ§°Ü£ºÖØ´«Request´ÎÊı¹ı¶à!\n");
-					printTime(); fprintf(fp, "[ERROR: 0x11] ´«ÊäÊ§°Ü£ºÖØ´«Request´ÎÊı¹ı¶à!\n");
+				if (senderror >= MAX_CONN) {
+					printf("[ERROR: 0x11] ÎŞ·¨Á¬½Óµ½·şÎñÆ÷£¬Çë¼ì²éIP¼°¶Ë¿ÚºÅÊÇ·ñÕıÈ·ÉèÖÃ¡£ÕâÒ²ÓĞ¿ÉÄÜÊÇÒòÎªÄã´íÎóµØÉèÖÃÁË·À»ğÇ½²ßÂÔ¡£\n");
+					printTime(); fprintf(fp, "[ERROR: 0x11] ÎŞ·¨Á¬½Óµ½·şÎñÆ÷£¬Çë¼ì²éIP¼°¶Ë¿ÚºÅÊÇ·ñÕıÈ·ÉèÖÃ¡£ÕâÒ²ÓĞ¿ÉÄÜÊÇÒòÎªÄã´íÎóµØÉèÖÃÁË·À»ğÇ½²ßÂÔ¡£\n");
 					return false;
 				}
-				printf("[WARNING: 0x90] Ó¦´ğ³¬Ê±£¬ÖØ´«Request!\n");
+				printf("[WARNING: 0x90] Á¬½Ó³¬Ê±£¬ÕıÔÚ³¢ÊÔÖØĞÂÁ¬½Ó·şÎñÆ÷\n");
 				len = sendRequest(WRQ, filename, type);
 			}
 			else if (len == -1) {
-				printf("[ERROR: %d]´«ÊäÊ§°Ü.\n", WSAGetLastError());
-				printTime(); fprintf(fp, "[ERROR: %d]´«ÊäÊ§°Ü.\n", WSAGetLastError());
+				printf("[ERROR: %d]´«ÊäÊ§°Ü£¬Çë¸ù¾İÌá¹©µÄ´íÎóÂë¼ì²éÁ¬½ÓÎÊÌâ£¡\n", WSAGetLastError());
+				printTime(); fprintf(fp, "[ERROR: %d]´«ÊäÊ§°Ü£¬Çë¸ù¾İÌá¹©µÄ´íÎóÂë¼ì²éÁ¬½ÓÎÊÌâ£¡\n", WSAGetLastError());
 				return false;
 			}
 			else if (recvbuf[1] == ERROR) {
